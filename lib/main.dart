@@ -1,18 +1,23 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import "package:audioplayer/audioplayer.dart";
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterBackgroundService.initialize(onStart);
 
-  runApp(MyApp());
+  runApp( MyApp());
 }
 
 void onStart() {
   WidgetsFlutterBinding.ensureInitialized();
   final service = FlutterBackgroundService();
+  final audioPlayer = AudioPlayer();
+  String uri = "song_uri";
+  int count = 0;
   service.onDataReceived.listen((event) {
     if (event!["action"] == "setAsForeground") {
       service.setForegroundMode(true);
@@ -27,6 +32,14 @@ void onStart() {
       service.stopBackgroundService();
     }
   });
+  audioPlayer.onPlayerStateChanged.listen((event) {
+    if (event == AudioPlayerState.COMPLETED) {
+      Map<String, dynamic> dataToSend = {"count": count++};
+      service.sendData(dataToSend);
+      audioPlayer.play(uri);
+    }
+  });
+  audioPlayer.play(uri);
 
   // bring to foreground
   service.setForegroundMode(true);
@@ -49,75 +62,46 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  bool isRunning = true;
+  int playCount = 0;
   String text = "Stop Service";
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterBackgroundService.initialize(onStart);
+
+    FlutterBackgroundService().onDataReceived.listen((event) {
+      if (event!.isNotEmpty && event["count"] != null) {
+        setState(() {
+          playCount = event['count'] as int;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Service App'),
-        ),
-        body: Column(
-          children: [
-            StreamBuilder<Map<String, dynamic>?>(
-              stream: FlutterBackgroundService().onDataReceived,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                final data = snapshot.data!;
-                DateTime? date = DateTime.tryParse(data["current_date"]);
-                return Text(date.toString());
-              },
-            ),
-            ElevatedButton(
-              child: Text("Foreground Mode"),
-              onPressed: () {
-                FlutterBackgroundService()
-                    .sendData({"action": "setAsForeground"});
-              },
-            ),
-            ElevatedButton(
-              child: Text("Background Mode"),
-              onPressed: () {
-                FlutterBackgroundService()
-                    .sendData({"action": "setAsBackground"});
-              },
-            ),
-            ElevatedButton(
-              child: Text(text),
-              onPressed: () async {
-                var isRunning =
-                    await FlutterBackgroundService().isServiceRunning();
-                if (isRunning) {
-                  FlutterBackgroundService().sendData(
-                    {"action": "stopService"},
-                  );
-                } else {
-                  FlutterBackgroundService.initialize(onStart);
-                }
-                if (!isRunning) {
-                  text = 'Stop Service';
-                } else {
-                  text = 'Start Service';
-                }
-                setState(() {});
-              },
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            FlutterBackgroundService().sendData({
-              "hello": "world",
-            });
-          },
-          child: Icon(Icons.play_arrow),
-        ),
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        child: Icon(isRunning ? Icons.play_arrow : Icons.stop),
+        onPressed: () async {
+          var isRunning = await FlutterBackgroundService().isServiceRunning();
+          if (isRunning) {
+            FlutterBackgroundService().sendData({"action": "stopService"});
+          } else {
+            FlutterBackgroundService.initialize(onStart);
+          }
+          setState(() {
+            this.isRunning = !isRunning;
+          });
+        },
       ),
+      body: Center(
+          child: Column(
+        children: [Text("$playCount")],
+      )),
     );
   }
 }
