@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -85,25 +84,27 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        child: Icon(isRunning ? Icons.play_arrow : Icons.stop),
-        onPressed: () async {
-          var isRunning = await FlutterBackgroundService().isServiceRunning();
-          if (isRunning) {
-            FlutterBackgroundService().sendData({"action": "stopService"});
-          } else {
-            FlutterBackgroundService.initialize(onStart);
-          }
-          setState(() {
-            this.isRunning = !isRunning;
-          });
-        },
+    return MaterialApp(
+      home: Scaffold(
+        floatingActionButton: FloatingActionButton(
+          child: Icon(isRunning ? Icons.play_arrow : Icons.stop),
+          onPressed: () async {
+            var isRunning = await FlutterBackgroundService().isServiceRunning();
+            if (isRunning) {
+              FlutterBackgroundService().sendData({"action": "stopService"});
+            } else {
+              FlutterBackgroundService.initialize(onStart);
+            }
+            setState(() {
+              this.isRunning = !isRunning;
+            });
+          },
+        ),
+        body: Center(
+            child: Column(
+          children: [Text("$playCount")],
+        )),
       ),
-      body: Center(
-          child: Column(
-        children: [Text("$playCount")],
-      )),
     );
   }
 }
