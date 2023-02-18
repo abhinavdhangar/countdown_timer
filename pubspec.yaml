@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter_background_service: ^0.1.5
   audioplayer: ^0.8.1
+  audioplayers: ^3.0.1
 
 dev_dependencies:
   flutter_test:

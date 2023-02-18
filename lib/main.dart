@@ -3,20 +3,20 @@ import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import "package:audioplayer/audioplayer.dart";
+import "package:audioplayers/audioplayers.dart";
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterBackgroundService.initialize(onStart);
 
-  runApp( MyApp());
+  runApp(MyApp());
 }
 
 void onStart() {
   WidgetsFlutterBinding.ensureInitialized();
   final service = FlutterBackgroundService();
   final audioPlayer = AudioPlayer();
-  String uri = "song_uri";
+  String uri = "https://media.graphassets.com/RpXalWHISuyetFYPW9kE";
   int count = 0;
   service.onDataReceived.listen((event) {
     if (event!["action"] == "setAsForeground") {
@@ -32,14 +32,16 @@ void onStart() {
       service.stopBackgroundService();
     }
   });
+
   audioPlayer.onPlayerStateChanged.listen((event) {
-    if (event == AudioPlayerState.COMPLETED) {
+      
+    if (event == PlayerState.completed) {
       Map<String, dynamic> dataToSend = {"count": count++};
       service.sendData(dataToSend);
-      audioPlayer.play(uri);
+      audioPlayer.play(uri as Source);
     }
   });
-  audioPlayer.play(uri);
+  audioPlayer.play(uri as Source);
 
   // bring to foreground
   service.setForegroundMode(true);
